@@ -62,6 +62,9 @@ Siga os passos abaixo para iniciar o projeto em seu ambiente local:
 Teste diferentes iluminações, umidades e temperaturas e observe o resultado.
 https://wokwi.com/projects/430475375536374785
 
+##🎥 Link do video
+https://youtu.be/enkgDYK_kHk
+
 <div align="center">
   Espero que este guia tenha sido útil e que você consiga reproduzir esse projeto.🎉😄
 </div>
