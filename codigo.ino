@@ -1,22 +1,21 @@
-#include <DHT.h>                     // Biblioteca para o sensor DHT (temperatura e umidade)
+#include <DHT.h>                     // Biblioteca para o sensor de temperatura e umidade
 #include <LiquidCrystal_I2C.h>      // Biblioteca para o display LCD com interface I2C
 
-// Definições do pino e tipo do sensor DHT
-#define DHTPIN 2                    // Pino digital ao qual o DHT22 está conectado
-#define DHTTYPE DHT22               // Tipo do sensor DHT (modelo DHT22)
+#define DHTPIN 2                    // Pino digital onde o DHT22 está conectado
+#define DHTTYPE DHT22               // Define o tipo de sensor (DHT22)
 
-DHT dht(DHTPIN, DHTTYPE);           // Inicializa o sensor DHT22
-LiquidCrystal_I2C lcd(0x27, 16, 2); // Inicializa o LCD I2C no endereço 0x27 com 16 colunas e 2 linhas
+DHT dht(DHTPIN, DHTTYPE);           // Criação do objeto do sensor DHT
+LiquidCrystal_I2C lcd(0x27, 16, 2); // Criação do objeto do LCD (endereço 0x27, 16 colunas, 2 linhas)
 
-const int sensorNivelPin = A0;      // Pino analógico usado para ler o sensor de nível
-const int buzzerPin = 8;            // Pino digital onde o buzzer está conectado
+const int sensorNivelPin = A0;      // Pino analógico do sensor de nível d'água
+const int buzzerPin = 8;            // Pino do buzzer
 
-// Definição dos pinos dos LEDs
+// Pinos dos LEDs indicadores
 const int ledVermelho = 13;
 const int ledAmarelo = 12;
 const int ledVerde = 11;
 
-// Criação de um caractere customizado (uma lanterna) para exibir no LCD
+// Desenho personalizado (símbolo de alerta) para o LCD
 byte lanternaChar[8] = {
   B00100,
   B01110,
@@ -29,40 +28,39 @@ byte lanternaChar[8] = {
 };
 
 void setup() {
-  Serial.begin(9600);             // Inicializa a comunicação serial a 9600 bps
-  dht.begin();                    // Inicia o sensor DHT
-  lcd.init();                     // Inicia o LCD
-  lcd.backlight();                // Liga a luz de fundo do LCD
+  Serial.begin(9600);              // Inicializa a comunicação serial
+  dht.begin();                     // Inicializa o sensor DHT
+  lcd.init();                      // Inicializa o LCD
+  lcd.backlight();                 // Liga a luz de fundo do LCD
 
-  // Define os modos dos pinos
-  pinMode(sensorNivelPin, INPUT);
-  pinMode(buzzerPin, OUTPUT);
+  pinMode(sensorNivelPin, INPUT); // Define o pino do sensor de nível como entrada
+  pinMode(buzzerPin, OUTPUT);     // Define o pino do buzzer como saída
+
+  // Define os pinos dos LEDs como saída
   pinMode(ledVermelho, OUTPUT);
   pinMode(ledAmarelo, OUTPUT);
   pinMode(ledVerde, OUTPUT);
 
-  lcd.createChar(0, lanternaChar); // Registra o caractere customizado no LCD
+  lcd.createChar(0, lanternaChar); // Cria o caractere personalizado no LCD
 }
 
 void loop() {
-  // Leitura do sensor de nível (valor analógico entre 0 e 1023)
+  // Leitura do sensor de nível (0–1023), mapeado para 0–300 cm
   int nivelRaw = analogRead(sensorNivelPin);
-  
-  // Mapeia o valor lido para um intervalo de 0 a 300 cm
   int nivelCm = map(nivelRaw, 0, 1023, 0, 300);
-  float nivelMetros = nivelCm / 100.0; // Converte para metros
+  float nivelMetros = nivelCm / 100.0;
 
-  // Leitura de temperatura e umidade do sensor DHT22
+  // Leitura da temperatura e umidade do DHT22
   float temperatura = dht.readTemperature();
   float umidade = dht.readHumidity();
 
-  // Verifica se as leituras são válidas
+  // Verifica se a leitura do DHT22 falhou
   if (isnan(temperatura) || isnan(umidade)) {
     Serial.println("Erro ao ler DHT22");
-    return; // Sai do loop se houver erro
+    return;
   }
 
-  // Exibe os dados no LCD
+  // Exibe dados no LCD
   lcd.clear();
   lcd.setCursor(0, 0);
   lcd.print("Niv:");
@@ -71,13 +69,13 @@ void loop() {
 
   lcd.setCursor(0, 1);
   lcd.print("T:");
-  lcd.print(temperatura, 1); // 1 casa decimal
+  lcd.print(temperatura, 1);
   lcd.print("C ");
   lcd.print("U:");
-  lcd.print(umidade, 0);     // Sem casas decimais
+  lcd.print(umidade, 0);
   lcd.print("%");
 
-  // Exibe os dados também no monitor serial
+  // Envia dados ao monitor serial
   Serial.print("Nivel cm: ");
   Serial.print(nivelCm);
   Serial.print(" | Temp: ");
@@ -86,28 +84,26 @@ void loop() {
   Serial.print(umidade);
   Serial.print("%");
 
-  // Lógica de alerta com base no nível de água
+  // Lógica de alerta com LEDs e buzzer
   if (nivelCm > 200) {
-    // Alerta de nível alto
-    tone(buzzerPin, 1000);               // Liga o buzzer com frequência de 1kHz
-    digitalWrite(ledVermelho, HIGH);     // Liga LED vermelho
-    digitalWrite(ledAmarelo, LOW);       // Desliga LED amarelo
-    digitalWrite(ledVerde, LOW);         // Desliga LED verde
+    // Nível muito alto: alerta
+    tone(buzzerPin, 1000); // Ativa buzzer com tom de 1 kHz
+    digitalWrite(ledVermelho, HIGH);
+    digitalWrite(ledAmarelo, LOW);
+    digitalWrite(ledVerde, LOW);
 
-    lcd.setCursor(13, 0);                // Posição no LCD para a lanterna
-    lcd.write(byte(0));                  // Exibe a lanterna no LCD
+    lcd.setCursor(13, 0);
+    lcd.write(byte(0)); // Mostra o símbolo de alerta no LCD
 
     Serial.println(" | ALERTA: Nivel ALTO!");
-  
   } else if (nivelCm > 100) {
-    // Nível intermediário
-    noTone(buzzerPin);                   // Desliga buzzer
+    // Nível intermediário: atenção
+    noTone(buzzerPin);
     digitalWrite(ledVermelho, LOW);
     digitalWrite(ledAmarelo, HIGH);
     digitalWrite(ledVerde, LOW);
 
     Serial.println(" | ATENCAO: Nivel Medio");
-
   } else {
     // Nível seguro
     noTone(buzzerPin);
@@ -118,5 +114,5 @@ void loop() {
     Serial.println(" | Status: Seguro");
   }
 
-  delay(1000); // Espera 1 segundo antes de repetir
+  delay(1000); // Aguarda 1 segundo antes da próxima leitura
 }
