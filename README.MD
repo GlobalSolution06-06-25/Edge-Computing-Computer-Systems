@@ -7,7 +7,7 @@
   Um projeto incrível com Arduino, DHT22, e potenciômetro !
 </div>
 
-# Equipe
+## 🤝 Equipe
 - Giovana Bernardino Carnevali 566196
 - João Vitor Parizotto Rocha 562719
 - Anna Clara Ruggeri 565553
